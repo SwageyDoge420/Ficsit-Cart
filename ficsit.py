@@ -1,5 +1,5 @@
-# File to run the ficsit car.  This takes teh xbox controller commands and
-# converts them to GPIO commands on teh raspberry PI
+# File to run the ficsit car.  This takes the xbox controller commands and
+# converts them to GPIO commands on the raspberry PI
 
 import time
 import evdev
@@ -11,16 +11,14 @@ CENTER_TOLERANCE = 350
 STICK_MAX = 65536
 
 # Steering Servo
-min = 7.8
-max = 11.7
+dc_min = 8.3
+dc_max = 11.5
 
-
-mid = (14.5 + 3.5) / 2.0
-range = (14.5 - 3.5) / 2.0
-
+dc_mid = (dc_max + dc_min) / 2.0
+dc_range = (dc_max - dc_min) / 2.0
 
 pwm = HardwarePWM(pwm_channel=0, hz=60, chip=0)
-pwm.start(mid) # Mid-point
+pwm.start(dc_mid)  # Mid-point
 
 
 # Drive Motor
@@ -40,7 +38,7 @@ while xbox_dev not in evdev.list_devices():
     time.sleep(0.5)
     xbox_on.off()
     time.sleep(0.5)
-    
+
 xbox_on.on()
 dev = InputDevice(xbox_dev)
 # attched first
@@ -94,7 +92,7 @@ for event in dev.read_loop():
             pass
         elif categorize(event).keycode[0] == "BTN_X":  # Y button
             pass
-        
+
     # read stick axis movement
     elif event.type == ecodes.EV_ABS:
         if axis[event.code] in ['ls_x', 'ls_y']:
@@ -106,23 +104,23 @@ for event in dev.read_loop():
                 value = 0
 
             if axis[event.code] == 'ls_x':
-                dc = range * (value/32768) + mid
-                if dc < min:
-                    dc = min
-                if dc > max:
-                    dc = max
+                dc = dc_range * (value/32768) + dc_mid
+                if dc < dc_min:
+                    dc = dc_min
+                if dc > dc_max:
+                    dc = dc_max
                 # print(value, dc)
                 pwm.change_duty_cycle(dc)
 
         elif axis[event.code] in ['lt', 'rt']:
-            if  axis[event.code] == 'lt':
+            if axis[event.code] == 'lt':
                 rev = event.value
                 # print('Reverse: ', event.value)
-                if  fwd == 0:
+                if fwd == 0:
                     motor.backward(event.value/1023)
                 else:
                     motor.backward(0.0)
-            if  axis[event.code] == 'rt':
+            if axis[event.code] == 'rt':
                 fwd = event.value
                 # print('Forward: ', event.value)
                 if rev == 0:
